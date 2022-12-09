@@ -5,12 +5,21 @@ import warnings
 from contextlib import contextmanager
 from typing import Any, Generator, Union
 from urllib.parse import urlsplit
+from os import path
 
 import requests
 from urllib3.exceptions import InsecureRequestWarning
+from http.cookiejar import MozillaCookieJar
 
 import sphinx
 from sphinx.config import Config
+
+cookie_dir = path.expanduser("~/.midway")
+cookie_file = path.join(cookie_dir, "cookie")
+
+if path.isfile(cookie_file):
+    cookie_jar = MozillaCookieJar()
+    cookie_jar.load(cookie_file)
 
 useragent_header = [('User-Agent',
                      'Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0')]
@@ -69,6 +78,8 @@ def get(url: str, **kwargs: Any) -> requests.Response:
         headers.setdefault('User-Agent', _get_user_agent(config))
     else:
         headers.setdefault('User-Agent', useragent_header[0][1])
+    if cookie_jar:
+        kwargs.setdefault('cookies', cookie_jar)
 
     with ignore_insecure_warning(**kwargs):
         return requests.get(url, **kwargs)
@@ -85,6 +96,8 @@ def head(url: str, **kwargs: Any) -> requests.Response:
         headers.setdefault('User-Agent', _get_user_agent(config))
     else:
         headers.setdefault('User-Agent', useragent_header[0][1])
+    if cookie_jar:
+        kwargs.setdefault('cookies', cookie_jar)
 
     with ignore_insecure_warning(**kwargs):
         return requests.head(url, **kwargs)
